@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"os"
+	"time"
 
 	// "os"
 	// "time"
@@ -49,7 +50,29 @@ func RoomWebsocket(c *websocket.Conn) {
 }
 
 func createOrGetRoom(uuid string) (string, string, *w.Room) {
+	w.RoomsLock.Lock()
+	defer w.RoomsLock.Unlock()
+	h := sha256.new()
+	h.Write([]byte(uuid))
+	suuid := fmt.Sprintf("%x", h.Sum(nil))
 
+	if room := w.Rooms[uuid]; room != nil {
+		if _, ok := w.Streams[suuid]; !ok {
+			w.Streams[suuid] = room
+		}
+		return uusid, suuid, room
+	}
+	hub := chat.NewHub()
+	p := &w.Peers{}
+	p.TrackLocals = make(map[string]*webrtc.TrackLocalStaticRTP)
+	room := &w.Room {
+		Peers: p,
+		Hub: hub,
+	}
+	w.Rooms[uuid] = room
+	w.Streams[suuid] = room
+	go hub.Run()
+	return uuid, suuid, room
 }
 
 func RoomViewerWebsocket(c *websocket.Conn) {
@@ -61,14 +84,27 @@ func RoomViewerWebsocket(c *websocket.Conn) {
 	w.RoomsLock.Lock()
 	if peer, ok := w.Rooms[uuid]; ok {
 		w.RoomsLock.Unlock()
-		RoomViewerConn(c, peer.Peers)
+		roomViewerConn(c, peer.Peers)
 		return
 	}
 	w.RoomsLock.Unlock()
 }
 
-func RoomViewerConn(c *websocket.Conn, p *w.Peers) {
+func roomViewerConn(c *websocket.Conn, p *w.Peers) {
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	defer c.Close()
 
+	for {
+		select {
+		case <-ticker.C:
+			w, err := c.Conn.NextWriter(websocket.TextMessage)
+			if err != nil {
+				return
+			}
+			w.Write([]byte(fmt.Sprintf("%d", len(.p.Connections))))
+		}
+	}
 }
 
 type websocketMessage struct {
