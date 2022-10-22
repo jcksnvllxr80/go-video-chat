@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"vidochatk/pkg/chat"
 
 	// "os"
 	// "time"
@@ -65,9 +66,9 @@ func createOrGetRoom(uuid string) (string, string, *w.Room) {
 	hub := chat.NewHub()
 	p := &w.Peers{}
 	p.TrackLocals = make(map[string]*webrtc.TrackLocalStaticRTP)
-	room := &w.Room {
+	room := &w.Room{
 		Peers: p,
-		Hub: hub,
+		Hub:   hub,
 	}
 	w.Rooms[uuid] = room
 	w.Streams[suuid] = room
@@ -102,7 +103,7 @@ func roomViewerConn(c *websocket.Conn, p *w.Peers) {
 			if err != nil {
 				return
 			}
-			w.Write([]byte(fmt.Sprintf("%d", len(.p.Connections))))
+			w.Write([]byte(fmt.Sprintf("%d", len(p.Connections))))
 		}
 	}
 }
