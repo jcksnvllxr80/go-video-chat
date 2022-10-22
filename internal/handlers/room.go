@@ -30,7 +30,7 @@ func Room(c *fiber.Ctx) error {
 	}
 	uuid, suuid, _ := createOrGetRoom(uuid)
 	return c.Render("peer", fiber.Map{
-		"RoomWebSocket":       fmt.Sprintf("%s://%s/room%s/websocket", ws, c.Hostname(), uuid),
+		"RoomWebSocket":       fmt.Sprintf("%s://%s/room/%s/websocket", ws, c.Hostname(), uuid),
 		"RoomLink":            fmt.Sprintf("%s://%s/room/%s", c.Protocol(), c.Hostname(), uuid),
 		"ChatWebSocketAddr":   fmt.Sprintf("%s://%s/room/%s/chat/websocket", ws, c.Hostname(), uuid),
 		"ViewerWebSocketAddr": fmt.Sprintf("%s://%s/room/%s/viewer/websocket", ws, c.Hostname(), uuid),
