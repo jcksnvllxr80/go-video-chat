@@ -21,17 +21,34 @@ type ThreadSafeWriter struct {
 
 func (t *ThreadSafeWriter) WriteJSON (v interface()) error {
 	t.Mutex.Lock()
-	defer t.Mutex.Unloack(
+	defer t.Mutex.Unlock(
 		return t.Conn.WriteJSON(v)
 	)
 }
 
 func (p *Peers) AddTrack (t *webrts.TrackRemote) *webrtc.TrackLocalStaticRTP {
+	p.ListLock.Lock()
+	defer func() {
+		p.ListLock.Unlock()
+		p.SignalPeerConnections()
+	}()
 
+	trackLocal, err := webrtc.NewTrackLocalStaticRTP(t.Codec().RTPCodecCapability, t.ID(), t.StreamID())
+	if err != nil {
+		log.Println(err.Error())
+		return nil
+	}
+	p.TrackLocals[t.ID()] = trackLocal
+	return trackLocal
 }
 
 func (p *Peers) RemoveTrack (t *webrtc.TrackLocalStaticRTP) {
-
+	p.ListLock.Lock()
+	defer func() {
+		p.ListLock.Unlock()
+		p.SignalPeerConnections()
+	}()
+	delete(p.TrackLocals, t.ID())
 }
 
 func (p *Peers) SignalPeerConnection() {
